@@ -1,0 +1,77 @@
+{
+	"name": "FirstInsertDimCustomer",
+	"properties": {
+		"type": "MappingDataFlow",
+		"typeProperties": {
+			"sources": [
+				{
+					"dataset": {
+						"referenceName": "Customer",
+						"type": "DatasetReference"
+					},
+					"name": "CustomerSource"
+				},
+				{
+					"dataset": {
+						"referenceName": "CustomerAddress2",
+						"type": "DatasetReference"
+					},
+					"name": "CustomerAddressSource"
+				},
+				{
+					"dataset": {
+						"referenceName": "Address",
+						"type": "DatasetReference"
+					},
+					"name": "AddressSource"
+				},
+				{
+					"dataset": {
+						"referenceName": "CustomerAddress2",
+						"type": "DatasetReference"
+					},
+					"name": "CustomerAddressSource2"
+				}
+			],
+			"sinks": [
+				{
+					"dataset": {
+						"referenceName": "DimCustomer",
+						"type": "DatasetReference"
+					},
+					"name": "sink1"
+				}
+			],
+			"transformations": [
+				{
+					"name": "DerivedColumn1"
+				},
+				{
+					"name": "SurrogateKey"
+				},
+				{
+					"name": "Select2"
+				},
+				{
+					"name": "Select3"
+				},
+				{
+					"name": "Join1"
+				},
+				{
+					"name": "FilterNulls"
+				},
+				{
+					"name": "Join2"
+				},
+				{
+					"name": "FilterBigCustomerID"
+				},
+				{
+					"name": "RemoveDuplicateCustomerIDs"
+				}
+			],
+			"script": "\n\nsource(output(\n\t\tCustomerID as integer,\n\t\tNameStyle as boolean,\n\t\tTitle as string,\n\t\tFirstName as string,\n\t\tMiddleName as string,\n\t\tLastName as string,\n\t\tSuffix as string,\n\t\tCompanyName as string,\n\t\tSalesPerson as string,\n\t\tEmailAddress as string,\n\t\tPhone as string,\n\t\tPasswordHash as string,\n\t\tPasswordSalt as string,\n\t\trowguid as string,\n\t\tModifiedDate as timestamp\n\t),\n\tallowSchemaDrift: true,\n\tvalidateSchema: false,\n\tisolationLevel: 'READ_UNCOMMITTED',\n\tformat: 'table') ~> CustomerSource\nsource(output(\n\t\tCustomerID as integer,\n\t\tAddressID as integer,\n\t\tAddressType as string,\n\t\trowguid as string,\n\t\tModifiedDate as timestamp\n\t),\n\tallowSchemaDrift: true,\n\tvalidateSchema: false,\n\tisolationLevel: 'READ_UNCOMMITTED',\n\tformat: 'table') ~> CustomerAddressSource\nsource(output(\n\t\tAddressID as integer,\n\t\tAddressLine1 as string,\n\t\tAddressLine2 as string,\n\t\tCity as string,\n\t\tStateProvince as string,\n\t\tCountryRegion as string,\n\t\tPostalCode as string,\n\t\trowguid as string,\n\t\tModifiedDate as timestamp\n\t),\n\tallowSchemaDrift: true,\n\tvalidateSchema: false,\n\tisolationLevel: 'READ_UNCOMMITTED',\n\tformat: 'table') ~> AddressSource\nsource(output(\n\t\tCustomerID as integer,\n\t\tAddressID as integer,\n\t\tAddressType as string,\n\t\trowguid as string,\n\t\tModifiedDate as timestamp\n\t),\n\tallowSchemaDrift: true,\n\tvalidateSchema: false,\n\tisolationLevel: 'READ_UNCOMMITTED',\n\tformat: 'table') ~> CustomerAddressSource2\nSelect2 derive(ValidFrom = '2019-08-08',\n\t\tValidTo = '2999-12-31',\n\t\tValid = 1) ~> DerivedColumn1\nDerivedColumn1 keyGenerate(output(SurrogateKey as long),\n\tstartAt: 1L) ~> SurrogateKey\nFilterBigCustomerID select(mapColumn(\n\t\tCustomerID = CustomerSource@CustomerID,\n\t\tFirstName,\n\t\tLastName,\n\t\tCompanyName,\n\t\tAddress = AddressLine1,\n\t\tPostalCode\n\t)) ~> Select2\nSurrogateKey select(mapColumn(\n\t\tSurrogateKey,\n\t\tCustomerID,\n\t\tFirstName,\n\t\tLastName,\n\t\tCompanyName,\n\t\tAddress,\n\t\tPostalCode,\n\t\tValidFrom,\n\t\tValidTo,\n\t\tValid\n\t)) ~> Select3\nFilterNulls, RemoveDuplicateCustomerIDs join(CustomerSource@CustomerID == CustomerAddressSource@CustomerID,\n\tjoinType:'left',\n\tbroadcast: 'none')~> Join1\nCustomerSource filter(not(isNull(CustomerID))) ~> FilterNulls\nJoin1, AddressSource join(CustomerAddressSource@AddressID == AddressSource@AddressID,\n\tjoinType:'left',\n\tbroadcast: 'none')~> Join2\nJoin2 filter(CustomerSource@CustomerID > 10000) ~> FilterBigCustomerID\nCustomerAddressSource, CustomerAddressSource2 exists((CustomerAddressSource@CustomerID == CustomerAddressSource2@CustomerID) && (CustomerAddressSource@AddressID != CustomerAddressSource2@AddressID),\n\tnegate:true,\n\tbroadcast: 'none')~> RemoveDuplicateCustomerIDs\nSelect3 sink(input(\n\t\tSurrogateKey as integer,\n\t\tCustomerID as integer,\n\t\tFirstName as string,\n\t\tLastName as string,\n\t\tCompanyName as string,\n\t\tAddress as string,\n\t\tPostalCode as string,\n\t\tValidFrom as date,\n\t\tValidTo as date,\n\t\tValid as integer\n\t),\n\tallowSchemaDrift: true,\n\tvalidateSchema: false,\n\tformat: 'table',\n\tdeletable:false,\n\tinsertable:true,\n\tupdateable:false,\n\tupsertable:false,\n\ttruncate:true) ~> sink1"
+		}
+	}
+}

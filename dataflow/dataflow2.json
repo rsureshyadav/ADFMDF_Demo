@@ -1,0 +1,71 @@
+{
+	"name": "dataflow2",
+	"properties": {
+		"description": "Input: Delta file",
+		"type": "MappingDataFlow",
+		"typeProperties": {
+			"sources": [
+				{
+					"dataset": {
+						"referenceName": "Customer",
+						"type": "DatasetReference"
+					},
+					"name": "CustomerSource"
+				},
+				{
+					"dataset": {
+						"referenceName": "CustomerAddress2",
+						"type": "DatasetReference"
+					},
+					"name": "CustomerAddressSource"
+				},
+				{
+					"dataset": {
+						"referenceName": "DimCustomerOriginal",
+						"type": "DatasetReference"
+					},
+					"name": "DimCustomerSource"
+				}
+			],
+			"sinks": [
+				{
+					"dataset": {
+						"referenceName": "DimCustomer",
+						"type": "DatasetReference"
+					},
+					"name": "sink1"
+				}
+			],
+			"transformations": [
+				{
+					"name": "LookupKey"
+				},
+				{
+					"name": "IdentifyNewCustomers"
+				},
+				{
+					"name": "LookupID"
+				},
+				{
+					"name": "DerivedColumn1"
+				},
+				{
+					"name": "CheckForChanges"
+				},
+				{
+					"name": "SetValid1"
+				},
+				{
+					"name": "SetValid0"
+				},
+				{
+					"name": "DerivedColumn2"
+				},
+				{
+					"name": "NormNames"
+				}
+			],
+			"script": "\n\nsource(output(\n\t\tCustomerID as integer,\n\t\tNameStyle as boolean,\n\t\tTitle as string,\n\t\tFirstName as string,\n\t\tMiddleName as string,\n\t\tLastName as string,\n\t\tSuffix as string,\n\t\tCompanyName as string,\n\t\tSalesPerson as string,\n\t\tEmailAddress as string,\n\t\tPhone as string,\n\t\tPasswordHash as string,\n\t\tPasswordSalt as string,\n\t\trowguid as string,\n\t\tModifiedDate as timestamp\n\t),\n\tallowSchemaDrift: true,\n\tvalidateSchema: false,\n\tisolationLevel: 'READ_UNCOMMITTED',\n\tformat: 'table') ~> CustomerSource\nsource(output(\n\t\tCustomerID as integer,\n\t\tAddressID as integer,\n\t\tAddressType as string,\n\t\trowguid as string,\n\t\tModifiedDate as timestamp\n\t),\n\tallowSchemaDrift: true,\n\tvalidateSchema: false,\n\tisolationLevel: 'READ_UNCOMMITTED',\n\tformat: 'table') ~> CustomerAddressSource\nsource(output(\n\t\tCustomerKey as integer,\n\t\tCustomerID as integer,\n\t\tFirstName as string,\n\t\tLastName as string,\n\t\tCompanyName as string,\n\t\tAddressID as integer,\n\t\tValidFrom as date,\n\t\tValidTo as date,\n\t\tValid as string\n\t),\n\tallowSchemaDrift: true,\n\tvalidateSchema: false,\n\tisolationLevel: 'READ_UNCOMMITTED',\n\tformat: 'table') ~> DimCustomerSource\nCustomerSource, CustomerAddressSource lookup(CustomerSource@CustomerID == CustomerAddressSource@CustomerID,\n\tbroadcast: 'none')~> LookupKey\nNormNames split(isNull(Valid),\n\tdisjoint: false) ~> IdentifyNewCustomers@(NewCustomer, OldCustomer)\nDerivedColumn2, DimCustomerSource lookup(DerivedColumn2@CustomerID == DimCustomerSource@CustomerID,\n\tbroadcast: 'none')~> LookupID\nIdentifyNewCustomers@NewCustomer derive(Valid = 1,\n\t\tSurrogateKey = toString(crc32(CustomerID, AddressID))) ~> DerivedColumn1\nIdentifyNewCustomers@OldCustomer, DimCustomerSource exists(IdentifyNewCustomers@NewCustomer@CustomerID == DimCustomerSource@CustomerID,\n\tnegate:false,\n\tbroadcast: 'none')~> CheckForChanges\nCheckForChanges derive(Valid = 1) ~> SetValid1\nCheckForChanges derive(Valid = 0) ~> SetValid0\nLookupKey derive(CustomerID = toInteger(CustomerSource@CustomerID)) ~> DerivedColumn2\nLookupID select(mapColumn(\n\t\tCustomerID = DerivedColumn2@CustomerID,\n\t\tFirstName = CustomerSource@FirstName,\n\t\tLastName = CustomerSource@LastName,\n\t\tCompanyName = CustomerSource@CompanyName,\n\t\tAddressID = CustomerAddressSource@AddressID,\n\t\tModifiedDate = CustomerAddressSource@ModifiedDate,\n\t\tCustomerKey,\n\t\tValidFrom,\n\t\tValidTo,\n\t\tValid\n\t)) ~> NormNames\nDerivedColumn1 sink(input(\n\t\tSurrogateKey as integer,\n\t\tCustomerID as integer,\n\t\tFirstName as string,\n\t\tLastName as string,\n\t\tCompanyName as string,\n\t\tAddress as string,\n\t\tPostalCode as string,\n\t\tValidFrom as date,\n\t\tValidTo as date,\n\t\tValid as integer\n\t),\n\tallowSchemaDrift: true,\n\tvalidateSchema: false,\n\tformat: 'table',\n\tdeletable:false,\n\tinsertable:true,\n\tupdateable:false,\n\tupsertable:false,\n\tmapColumn(\n\t\tCustomerKey,\n\t\tCustomerID,\n\t\tFirstName,\n\t\tLastName,\n\t\tCompanyName,\n\t\tAddressID,\n\t\tValidFrom,\n\t\tValidTo,\n\t\tValid,\n\t\tSurrogateKey\n\t)) ~> sink1"
+		}
+	}
+}

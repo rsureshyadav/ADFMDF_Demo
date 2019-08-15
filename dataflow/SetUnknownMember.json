@@ -1,0 +1,38 @@
+{
+	"name": "SetUnknownMember",
+	"properties": {
+		"type": "MappingDataFlow",
+		"typeProperties": {
+			"sources": [
+				{
+					"dataset": {
+						"referenceName": "CustomerAndAddress",
+						"type": "DatasetReference"
+					},
+					"name": "SetUnknownMembers"
+				}
+			],
+			"sinks": [
+				{
+					"dataset": {
+						"referenceName": "CustomerAndAddress",
+						"type": "DatasetReference"
+					},
+					"name": "sink1"
+				}
+			],
+			"transformations": [
+				{
+					"name": "SetUnknownValues"
+				},
+				{
+					"name": "AlterAddress"
+				},
+				{
+					"name": "Filter1"
+				}
+			],
+			"script": "\n\nsource(output(\n\t\tCustomerID as integer,\n\t\tFirstName as string,\n\t\tLastName as string,\n\t\tCompanyName as string,\n\t\tAddress as string,\n\t\tPostalCode as string\n\t),\n\tallowSchemaDrift: true,\n\tvalidateSchema: false,\n\tisolationLevel: 'READ_UNCOMMITTED',\n\tformat: 'table') ~> SetUnknownMembers\nFilter1 derive(Address = 'Unknown') ~> SetUnknownValues\nSetUnknownValues alterRow(updateIf(true())) ~> AlterAddress\nSetUnknownMembers filter(isNull(Address)) ~> Filter1\nAlterAddress sink(input(\n\t\tCustomerID as integer,\n\t\tFirstName as string,\n\t\tLastName as string,\n\t\tCompanyName as string,\n\t\tAddress as string,\n\t\tPostalCode as string\n\t),\n\tallowSchemaDrift: true,\n\tvalidateSchema: false,\n\tformat: 'table',\n\tdeletable:false,\n\tinsertable:true,\n\tupdateable:false,\n\tupsertable:false) ~> sink1"
+		}
+	}
+}

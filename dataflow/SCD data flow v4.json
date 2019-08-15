@@ -1,0 +1,101 @@
+{
+	"name": "SCD data flow v4",
+	"properties": {
+		"type": "MappingDataFlow",
+		"typeProperties": {
+			"sources": [
+				{
+					"dataset": {
+						"referenceName": "DimCustomer",
+						"type": "DatasetReference"
+					},
+					"name": "DimCustomerSource"
+				},
+				{
+					"dataset": {
+						"referenceName": "CustomerAndAddress",
+						"type": "DatasetReference"
+					},
+					"name": "CustomerSource"
+				},
+				{
+					"dataset": {
+						"referenceName": "DimCustomerOriginal",
+						"type": "DatasetReference"
+					},
+					"name": "GetMaxValForSK"
+				}
+			],
+			"sinks": [
+				{
+					"dataset": {
+						"referenceName": "DimCustomer",
+						"type": "DatasetReference"
+					},
+					"name": "sinkUpdates"
+				},
+				{
+					"dataset": {
+						"referenceName": "DimCustomer",
+						"type": "DatasetReference"
+					},
+					"name": "sinkInactive"
+				}
+			],
+			"transformations": [
+				{
+					"name": "IdentifyNewCustomers"
+				},
+				{
+					"name": "LookupID"
+				},
+				{
+					"name": "CheckForChanges"
+				},
+				{
+					"name": "SetValid0"
+				},
+				{
+					"name": "KeyAsInt"
+				},
+				{
+					"name": "NormNames"
+				},
+				{
+					"name": "NameNorm2"
+				},
+				{
+					"name": "SetInactiveFields"
+				},
+				{
+					"name": "AlterRow1"
+				},
+				{
+					"name": "SetValidTo"
+				},
+				{
+					"name": "UnionNewAndUpdated"
+				},
+				{
+					"name": "SurrogateKey1"
+				},
+				{
+					"name": "AddSKtoMaxVal"
+				},
+				{
+					"name": "AddMaxValForSK"
+				},
+				{
+					"name": "NullFilter"
+				},
+				{
+					"name": "DimCustomerValid"
+				},
+				{
+					"name": "DeriveColumns"
+				}
+			],
+			"script": "\n\nsource(output(\n\t\tSurrogateKey as integer,\n\t\tCustomerID as integer,\n\t\tFirstName as string,\n\t\tLastName as string,\n\t\tCompanyName as string,\n\t\tAddress as string,\n\t\tPostalCode as string,\n\t\tValidFrom as date,\n\t\tValidTo as date,\n\t\tValid as integer\n\t),\n\tallowSchemaDrift: true,\n\tvalidateSchema: false,\n\tisolationLevel: 'READ_UNCOMMITTED',\n\tformat: 'table') ~> DimCustomerSource\nsource(output(\n\t\tCustomerID as integer,\n\t\tFirstName as string,\n\t\tLastName as string,\n\t\tCompanyName as string,\n\t\tAddress as string,\n\t\tPostalCode as string\n\t),\n\tallowSchemaDrift: true,\n\tvalidateSchema: false,\n\tisolationLevel: 'READ_UNCOMMITTED',\n\tformat: 'table') ~> CustomerSource\nsource(output(\n\t\tmaxval as integer\n\t),\n\tallowSchemaDrift: true,\n\tvalidateSchema: false,\n\tisolationLevel: 'READ_UNCOMMITTED',\n\tquery: 'select MAX(SurrogateKey) as maxval from dbo.DimCustomer',\n\tformat: 'query') ~> GetMaxValForSK\nNormNames split(isNull(Valid),\n\tdisjoint: false) ~> IdentifyNewCustomers@(NewCustomer, OldCustomer)\nKeyAsInt, DimCustomerValid lookup(KeyAsInt@CustomerID == DimCustomerSource@CustomerID,\n\tbroadcast: 'none')~> LookupID\nNameNorm2, DimCustomerValid exists((NameNorm2@CustomerID == DimCustomerSource@CustomerID) && (NameNorm2@Address != DimCustomerSource@Address || \r\nNameNorm2@PostalCode != DimCustomerSource@PostalCode),\n\tnegate:false,\n\tbroadcast: 'none')~> CheckForChanges\nCheckForChanges derive(Valid = 0) ~> SetValid0\nNullFilter derive(CustomerID = toInteger(CustomerID)) ~> KeyAsInt\nLookupID select(mapColumn(\n\t\tSurrogateKey,\n\t\tCustomerID = KeyAsInt@CustomerID,\n\t\tFirstName = CustomerSource@FirstName,\n\t\tLastName = CustomerSource@LastName,\n\t\tCompanyName = CustomerSource@CompanyName,\n\t\tAddress = CustomerSource@Address,\n\t\tPostalCode = CustomerSource@PostalCode,\n\t\tValidFrom,\n\t\tValidTo,\n\t\tValid\n\t)) ~> NormNames\nIdentifyNewCustomers@OldCustomer select(mapColumn(\n\t\tCustomerID,\n\t\tFirstName,\n\t\tLastName,\n\t\tCompanyName,\n\t\tAddress,\n\t\tPostalCode,\n\t\tValidFrom,\n\t\tValidTo,\n\t\tValid\n\t)) ~> NameNorm2\nSetValidTo select(mapColumn(\n\t\tCustomerID,\n\t\tValidTo,\n\t\tValid\n\t)) ~> SetInactiveFields\nSetInactiveFields alterRow(updateIf(true())) ~> AlterRow1\nSetValid0 derive(ValidTo = currentDate()) ~> SetValidTo\nIdentifyNewCustomers@NewCustomer, CheckForChanges union(byName: true)~> UnionNewAndUpdated\nAddMaxValForSK keyGenerate(output(SurrogateKey as long),\n\tstartAt: 1L) ~> SurrogateKey1\nSurrogateKey1 derive(SurrogateKey = toInteger(SurrogateKey) + toInteger(maxval)) ~> AddSKtoMaxVal\nDeriveColumns, GetMaxValForSK join(1 == 1,\n\tjoinType:'cross',\n\tbroadcast: 'none')~> AddMaxValForSK\nCustomerSource filter(not(isNull(CustomerID))) ~> NullFilter\nDimCustomerSource filter(Valid == 1) ~> DimCustomerValid\nUnionNewAndUpdated derive(Valid = 1,\n\t\tValidFrom = currentDate(),\n\t\tValidTo = toDate('2999-12-31')) ~> DeriveColumns\nAddSKtoMaxVal sink(input(\n\t\tSurrogateKey as integer,\n\t\tCustomerID as integer,\n\t\tFirstName as string,\n\t\tLastName as string,\n\t\tCompanyName as string,\n\t\tAddress as string,\n\t\tPostalCode as string,\n\t\tValidFrom as date,\n\t\tValidTo as date,\n\t\tValid as integer\n\t),\n\tallowSchemaDrift: true,\n\tvalidateSchema: false,\n\tformat: 'table',\n\tdeletable:false,\n\tinsertable:true,\n\tupdateable:false,\n\tupsertable:false) ~> sinkUpdates\nAlterRow1 sink(input(\n\t\tSurrogateKey as integer,\n\t\tCustomerID as integer,\n\t\tFirstName as string,\n\t\tLastName as string,\n\t\tCompanyName as string,\n\t\tAddress as string,\n\t\tPostalCode as string,\n\t\tValidFrom as date,\n\t\tValidTo as date,\n\t\tValid as integer\n\t),\n\tallowSchemaDrift: true,\n\tvalidateSchema: false,\n\tformat: 'table',\n\tdeletable:false,\n\tinsertable:false,\n\tupdateable:true,\n\tupsertable:false,\n\tkeys:['CustomerID']) ~> sinkInactive"
+		}
+	}
+}
