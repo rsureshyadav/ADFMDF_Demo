@@ -1,0 +1,917 @@
+{
+	"$schema": "http://schema.management.azure.com/schemas/2015-01-01/deploymentTemplate.json#",
+	"contentVersion": "1.0.0.0",
+	"parameters": {
+		"factoryName": {
+			"type": "string",
+			"metadata": "Data Factory Name"
+		},
+		"AzureSqlDatabase1": {
+			"type": "string"
+		}
+	},
+	"variables": {
+		"factoryId": "[concat('Microsoft.DataFactory/factories/', parameters('factoryName'))]"
+	},
+	"resources": [
+		{
+			"name": "[concat(parameters('factoryName'), '/SCD2 Pipeline')]",
+			"type": "Microsoft.DataFactory/factories/pipelines",
+			"apiVersion": "2018-06-01",
+			"properties": {
+				"activities": [
+					{
+						"name": "AddAddress",
+						"type": "ExecuteDataFlow",
+						"dependsOn": [
+							{
+								"activity": "CopyCustomer",
+								"dependencyConditions": [
+									"Succeeded"
+								]
+							},
+							{
+								"activity": "CopyAddress",
+								"dependencyConditions": [
+									"Succeeded"
+								]
+							}
+						],
+						"policy": {
+							"timeout": "7.00:00:00",
+							"retry": 0,
+							"retryIntervalInSeconds": 30,
+							"secureOutput": false,
+							"secureInput": false
+						},
+						"userProperties": [],
+						"typeProperties": {
+							"dataflow": {
+								"referenceName": "AddAddress",
+								"type": "DataFlowReference"
+							}
+						}
+					},
+					{
+						"name": "CopyCustomer",
+						"type": "Copy",
+						"dependsOn": [],
+						"policy": {
+							"timeout": "7.00:00:00",
+							"retry": 0,
+							"retryIntervalInSeconds": 30,
+							"secureOutput": false,
+							"secureInput": false
+						},
+						"userProperties": [],
+						"typeProperties": {
+							"source": {
+								"type": "AzureSqlSource"
+							},
+							"sink": {
+								"type": "AzureSqlSink",
+								"preCopyScript": "TRUNCATE TABLE dbo.CustomerCopy"
+							},
+							"enableStaging": false,
+							"translator": {
+								"type": "TabularTranslator",
+								"mappings": [
+									{
+										"source": {
+											"name": "CustomerID",
+											"type": "Int32"
+										},
+										"sink": {
+											"name": "CustomerID",
+											"type": "Int32"
+										}
+									},
+									{
+										"source": {
+											"name": "NameStyle",
+											"type": "Boolean"
+										},
+										"sink": {
+											"name": "NameStyle",
+											"type": "Boolean"
+										}
+									},
+									{
+										"source": {
+											"name": "Title",
+											"type": "String"
+										},
+										"sink": {
+											"name": "Title",
+											"type": "String"
+										}
+									},
+									{
+										"source": {
+											"name": "FirstName",
+											"type": "String"
+										},
+										"sink": {
+											"name": "FirstName",
+											"type": "String"
+										}
+									},
+									{
+										"source": {
+											"name": "MiddleName",
+											"type": "String"
+										},
+										"sink": {
+											"name": "MiddleName",
+											"type": "String"
+										}
+									},
+									{
+										"source": {
+											"name": "LastName",
+											"type": "String"
+										},
+										"sink": {
+											"name": "LastName",
+											"type": "String"
+										}
+									},
+									{
+										"source": {
+											"name": "Suffix",
+											"type": "String"
+										},
+										"sink": {
+											"name": "Suffix",
+											"type": "String"
+										}
+									},
+									{
+										"source": {
+											"name": "CompanyName",
+											"type": "String"
+										},
+										"sink": {
+											"name": "CompanyName",
+											"type": "String"
+										}
+									},
+									{
+										"source": {
+											"name": "SalesPerson",
+											"type": "String"
+										},
+										"sink": {
+											"name": "SalesPerson",
+											"type": "String"
+										}
+									},
+									{
+										"source": {
+											"name": "EmailAddress",
+											"type": "String"
+										},
+										"sink": {
+											"name": "EmailAddress",
+											"type": "String"
+										}
+									},
+									{
+										"source": {
+											"name": "Phone",
+											"type": "String"
+										},
+										"sink": {
+											"name": "Phone",
+											"type": "String"
+										}
+									},
+									{
+										"source": {
+											"name": "PasswordHash",
+											"type": "String"
+										},
+										"sink": {
+											"name": "PasswordHash",
+											"type": "String"
+										}
+									},
+									{
+										"source": {
+											"name": "PasswordSalt",
+											"type": "String"
+										},
+										"sink": {
+											"name": "PasswordSalt",
+											"type": "String"
+										}
+									},
+									{
+										"source": {
+											"name": "rowguid",
+											"type": "Guid"
+										},
+										"sink": {
+											"name": "rowguid",
+											"type": "Guid"
+										}
+									},
+									{
+										"source": {
+											"name": "ModifiedDate",
+											"type": "DateTime"
+										},
+										"sink": {
+											"name": "ModifiedDate",
+											"type": "DateTime"
+										}
+									}
+								]
+							}
+						},
+						"inputs": [
+							{
+								"referenceName": "CustomerSource",
+								"type": "DatasetReference"
+							}
+						],
+						"outputs": [
+							{
+								"referenceName": "CustomerCopy",
+								"type": "DatasetReference"
+							}
+						]
+					},
+					{
+						"name": "CopyAddress",
+						"type": "Copy",
+						"dependsOn": [],
+						"policy": {
+							"timeout": "7.00:00:00",
+							"retry": 0,
+							"retryIntervalInSeconds": 30,
+							"secureOutput": false,
+							"secureInput": false
+						},
+						"userProperties": [],
+						"typeProperties": {
+							"source": {
+								"type": "AzureSqlSource"
+							},
+							"sink": {
+								"type": "AzureSqlSink",
+								"preCopyScript": "TRUNCATE TABLE dbo.CustomerAddressCopy"
+							},
+							"enableStaging": false
+						},
+						"inputs": [
+							{
+								"referenceName": "CustomerAddress",
+								"type": "DatasetReference"
+							}
+						],
+						"outputs": [
+							{
+								"referenceName": "CustomerAddressCopy",
+								"type": "DatasetReference"
+							}
+						]
+					},
+					{
+						"name": "AddToHistory",
+						"type": "ExecuteDataFlow",
+						"dependsOn": [
+							{
+								"activity": "AddAddress",
+								"dependencyConditions": [
+									"Succeeded"
+								]
+							}
+						],
+						"policy": {
+							"timeout": "7.00:00:00",
+							"retry": 0,
+							"retryIntervalInSeconds": 30,
+							"secureOutput": false,
+							"secureInput": false
+						},
+						"userProperties": [],
+						"typeProperties": {
+							"dataflow": {
+								"referenceName": "SCD Data Flow v5",
+								"type": "DataFlowReference"
+							}
+						}
+					}
+				],
+				"annotations": []
+			},
+			"dependsOn": [
+				"[concat(variables('factoryId'), '/dataflows/AddAddress')]",
+				"[concat(variables('factoryId'), '/datasets/CustomerSource')]",
+				"[concat(variables('factoryId'), '/datasets/CustomerCopy')]",
+				"[concat(variables('factoryId'), '/datasets/CustomerAddress')]",
+				"[concat(variables('factoryId'), '/datasets/CustomerAddressCopy')]",
+				"[concat(variables('factoryId'), '/dataflows/SCD Data Flow v5')]"
+			]
+		},
+		{
+			"name": "[concat(parameters('factoryName'), '/AddAddress')]",
+			"type": "Microsoft.DataFactory/factories/dataflows",
+			"apiVersion": "2018-06-01",
+			"properties": {
+				"type": "MappingDataFlow",
+				"typeProperties": {
+					"sources": [
+						{
+							"dataset": {
+								"referenceName": "CustomerCopy",
+								"type": "DatasetReference"
+							},
+							"name": "CustomerSource"
+						},
+						{
+							"dataset": {
+								"referenceName": "CustomerAddressCopy",
+								"type": "DatasetReference"
+							},
+							"name": "CustomerAddressSource"
+						},
+						{
+							"dataset": {
+								"referenceName": "Address",
+								"type": "DatasetReference"
+							},
+							"name": "AddressSource"
+						},
+						{
+							"dataset": {
+								"referenceName": "CustomerAddressCopy",
+								"type": "DatasetReference"
+							},
+							"name": "CustomerAddressSource2"
+						}
+					],
+					"sinks": [
+						{
+							"dataset": {
+								"referenceName": "CustomerAndAddress",
+								"type": "DatasetReference"
+							},
+							"name": "CustomerAndAddress"
+						}
+					],
+					"transformations": [
+						{
+							"name": "LookupKey"
+						},
+						{
+							"name": "Rename"
+						},
+						{
+							"name": "LookupAddress"
+						},
+						{
+							"name": "FilterCustomerID"
+						},
+						{
+							"name": "RemoveDuplicateCustomerID"
+						}
+					],
+					"script": "\n\nsource(output(\n\t\tCustomerID as integer,\n\t\tNameStyle as boolean,\n\t\tTitle as string,\n\t\tFirstName as string,\n\t\tMiddleName as string,\n\t\tLastName as string,\n\t\tSuffix as string,\n\t\tCompanyName as string,\n\t\tSalesPerson as string,\n\t\tEmailAddress as string,\n\t\tPhone as string,\n\t\tPasswordHash as string,\n\t\tPasswordSalt as string,\n\t\trowguid as string,\n\t\tModifiedDate as timestamp\n\t),\n\tallowSchemaDrift: true,\n\tvalidateSchema: false,\n\tisolationLevel: 'READ_UNCOMMITTED',\n\tformat: 'table') ~> CustomerSource\nsource(output(\n\t\tCustomerID as integer,\n\t\tAddressID as integer,\n\t\tAddressType as string,\n\t\trowguid as string,\n\t\tModifiedDate as timestamp\n\t),\n\tallowSchemaDrift: true,\n\tvalidateSchema: false,\n\tisolationLevel: 'READ_UNCOMMITTED',\n\tformat: 'table') ~> CustomerAddressSource\nsource(output(\n\t\tAddressID as integer,\n\t\tAddressLine1 as string,\n\t\tAddressLine2 as string,\n\t\tCity as string,\n\t\tStateProvince as string,\n\t\tCountryRegion as string,\n\t\tPostalCode as string,\n\t\trowguid as string,\n\t\tModifiedDate as timestamp\n\t),\n\tallowSchemaDrift: true,\n\tvalidateSchema: false,\n\tisolationLevel: 'READ_UNCOMMITTED',\n\tformat: 'table') ~> AddressSource\nsource(output(\n\t\tCustomerID as integer,\n\t\tAddressID as integer,\n\t\tAddressType as string,\n\t\trowguid as string,\n\t\tModifiedDate as timestamp\n\t),\n\tallowSchemaDrift: true,\n\tvalidateSchema: false,\n\tisolationLevel: 'READ_UNCOMMITTED',\n\tformat: 'table') ~> CustomerAddressSource2\nFilterCustomerID, RemoveDuplicateCustomerID lookup(CustomerSource@CustomerID == CustomerAddressSource@CustomerID,\n\tbroadcast: 'none')~> LookupKey\nLookupAddress select(mapColumn(\n\t\tCustomerId = CustomerSource@CustomerID,\n\t\tFirstName = CustomerSource@FirstName,\n\t\tLastName = CustomerSource@LastName,\n\t\tCompanyName = CustomerSource@CompanyName,\n\t\tAddress = AddressLine1,\n\t\tPostalCode = AddressSource@PostalCode\n\t)) ~> Rename\nLookupKey, AddressSource lookup(CustomerAddressSource@AddressID == AddressSource@AddressID,\n\tbroadcast: 'none')~> LookupAddress\nCustomerSource filter(CustomerID > 10000) ~> FilterCustomerID\nCustomerAddressSource, CustomerAddressSource2 exists((CustomerAddressSource@CustomerID == CustomerAddressSource2@CustomerID) && (CustomerAddressSource@AddressID != CustomerAddressSource2@AddressID),\n\tnegate:true,\n\tbroadcast: 'none')~> RemoveDuplicateCustomerID\nRename sink(input(\n\t\tCustomerID as integer,\n\t\tFirstName as string,\n\t\tLastName as string,\n\t\tCompanyName as string,\n\t\tAddress as string,\n\t\tPostalCode as string\n\t),\n\tallowSchemaDrift: true,\n\tvalidateSchema: false,\n\tformat: 'table',\n\tdeletable:false,\n\tinsertable:true,\n\tupdateable:false,\n\tupsertable:false,\n\ttruncate:true,\n\tkeys:['CustomerId'],\n\tmapColumn(\n\t\tCustomerID = CustomerId,\n\t\tFirstName,\n\t\tLastName,\n\t\tCompanyName,\n\t\tAddress,\n\t\tPostalCode\n\t)) ~> CustomerAndAddress"
+				}
+			},
+			"dependsOn": [
+				"[concat(variables('factoryId'), '/datasets/CustomerCopy')]",
+				"[concat(variables('factoryId'), '/datasets/CustomerAddressCopy')]",
+				"[concat(variables('factoryId'), '/datasets/Address')]",
+				"[concat(variables('factoryId'), '/datasets/CustomerAndAddress')]"
+			]
+		},
+		{
+			"name": "[concat(parameters('factoryName'), '/CustomerSource')]",
+			"type": "Microsoft.DataFactory/factories/datasets",
+			"apiVersion": "2018-06-01",
+			"properties": {
+				"linkedServiceName": {
+					"referenceName": "[parameters('AzureSqlDatabase1')]",
+					"type": "LinkedServiceReference"
+				},
+				"annotations": [],
+				"type": "AzureSqlTable",
+				"schema": [
+					{
+						"name": "CustomerID",
+						"type": "int",
+						"precision": 10
+					},
+					{
+						"name": "NameStyle",
+						"type": "bit"
+					},
+					{
+						"name": "Title",
+						"type": "nvarchar"
+					},
+					{
+						"name": "FirstName",
+						"type": "nvarchar"
+					},
+					{
+						"name": "MiddleName",
+						"type": "nvarchar"
+					},
+					{
+						"name": "LastName",
+						"type": "nvarchar"
+					},
+					{
+						"name": "Suffix",
+						"type": "nvarchar"
+					},
+					{
+						"name": "CompanyName",
+						"type": "nvarchar"
+					},
+					{
+						"name": "SalesPerson",
+						"type": "nvarchar"
+					},
+					{
+						"name": "EmailAddress",
+						"type": "nvarchar"
+					},
+					{
+						"name": "Phone",
+						"type": "nvarchar"
+					},
+					{
+						"name": "PasswordHash",
+						"type": "varchar"
+					},
+					{
+						"name": "PasswordSalt",
+						"type": "varchar"
+					},
+					{
+						"name": "rowguid",
+						"type": "uniqueidentifier"
+					},
+					{
+						"name": "ModifiedDate",
+						"type": "datetime",
+						"precision": 23,
+						"scale": 3
+					}
+				],
+				"typeProperties": {
+					"tableName": "[[SalesLT].[Customer]"
+				}
+			},
+			"dependsOn": []
+		},
+		{
+			"name": "[concat(parameters('factoryName'), '/CustomerCopy')]",
+			"type": "Microsoft.DataFactory/factories/datasets",
+			"apiVersion": "2018-06-01",
+			"properties": {
+				"linkedServiceName": {
+					"referenceName": "[parameters('AzureSqlDatabase1')]",
+					"type": "LinkedServiceReference"
+				},
+				"annotations": [],
+				"type": "AzureSqlTable",
+				"schema": [
+					{
+						"name": "CustomerID",
+						"type": "int",
+						"precision": 10
+					},
+					{
+						"name": "NameStyle",
+						"type": "bit"
+					},
+					{
+						"name": "Title",
+						"type": "nvarchar"
+					},
+					{
+						"name": "FirstName",
+						"type": "nvarchar"
+					},
+					{
+						"name": "MiddleName",
+						"type": "nvarchar"
+					},
+					{
+						"name": "LastName",
+						"type": "nvarchar"
+					},
+					{
+						"name": "Suffix",
+						"type": "nvarchar"
+					},
+					{
+						"name": "CompanyName",
+						"type": "nvarchar"
+					},
+					{
+						"name": "SalesPerson",
+						"type": "nvarchar"
+					},
+					{
+						"name": "EmailAddress",
+						"type": "nvarchar"
+					},
+					{
+						"name": "Phone",
+						"type": "nvarchar"
+					},
+					{
+						"name": "PasswordHash",
+						"type": "varchar"
+					},
+					{
+						"name": "PasswordSalt",
+						"type": "varchar"
+					},
+					{
+						"name": "rowguid",
+						"type": "uniqueidentifier"
+					},
+					{
+						"name": "ModifiedDate",
+						"type": "datetime",
+						"precision": 23,
+						"scale": 3
+					}
+				],
+				"typeProperties": {
+					"schema": "dbo",
+					"table": "CustomerCopy"
+				}
+			},
+			"dependsOn": []
+		},
+		{
+			"name": "[concat(parameters('factoryName'), '/CustomerAddress')]",
+			"type": "Microsoft.DataFactory/factories/datasets",
+			"apiVersion": "2018-06-01",
+			"properties": {
+				"linkedServiceName": {
+					"referenceName": "[parameters('AzureSqlDatabase1')]",
+					"type": "LinkedServiceReference"
+				},
+				"annotations": [],
+				"type": "AzureSqlTable",
+				"schema": [
+					{
+						"name": "CustomerID",
+						"type": "int",
+						"precision": 10
+					},
+					{
+						"name": "AddressID",
+						"type": "int",
+						"precision": 10
+					},
+					{
+						"name": "AddressType",
+						"type": "nvarchar"
+					},
+					{
+						"name": "rowguid",
+						"type": "uniqueidentifier"
+					},
+					{
+						"name": "ModifiedDate",
+						"type": "datetime",
+						"precision": 23,
+						"scale": 3
+					}
+				],
+				"typeProperties": {
+					"tableName": "[[SalesLT].[CustomerAddress]"
+				}
+			},
+			"dependsOn": []
+		},
+		{
+			"name": "[concat(parameters('factoryName'), '/CustomerAddressCopy')]",
+			"type": "Microsoft.DataFactory/factories/datasets",
+			"apiVersion": "2018-06-01",
+			"properties": {
+				"linkedServiceName": {
+					"referenceName": "[parameters('AzureSqlDatabase1')]",
+					"type": "LinkedServiceReference"
+				},
+				"annotations": [],
+				"type": "AzureSqlTable",
+				"schema": [
+					{
+						"name": "CustomerID",
+						"type": "int",
+						"precision": 10
+					},
+					{
+						"name": "AddressID",
+						"type": "int",
+						"precision": 10
+					},
+					{
+						"name": "AddressType",
+						"type": "nvarchar"
+					},
+					{
+						"name": "rowguid",
+						"type": "uniqueidentifier"
+					},
+					{
+						"name": "ModifiedDate",
+						"type": "datetime",
+						"precision": 23,
+						"scale": 3
+					}
+				],
+				"typeProperties": {
+					"schema": "dbo",
+					"table": "CustomerAddressCopy"
+				}
+			},
+			"dependsOn": []
+		},
+		{
+			"name": "[concat(parameters('factoryName'), '/SCD Data Flow v5')]",
+			"type": "Microsoft.DataFactory/factories/dataflows",
+			"apiVersion": "2018-06-01",
+			"properties": {
+				"type": "MappingDataFlow",
+				"typeProperties": {
+					"sources": [
+						{
+							"dataset": {
+								"referenceName": "DimCustomer",
+								"type": "DatasetReference"
+							},
+							"name": "DimCustomerSource"
+						},
+						{
+							"dataset": {
+								"referenceName": "CustomerAndAddress",
+								"type": "DatasetReference"
+							},
+							"name": "CustomerSource"
+						},
+						{
+							"dataset": {
+								"referenceName": "DimCustomer",
+								"type": "DatasetReference"
+							},
+							"name": "GetMaxValSK"
+						}
+					],
+					"sinks": [
+						{
+							"dataset": {
+								"referenceName": "DimCustomer",
+								"type": "DatasetReference"
+							},
+							"name": "sinkChanges"
+						},
+						{
+							"dataset": {
+								"referenceName": "DimCustomer",
+								"type": "DatasetReference"
+							},
+							"name": "sinkInactive"
+						}
+					],
+					"transformations": [
+						{
+							"name": "IdentifyNewCustomers"
+						},
+						{
+							"name": "LookupID"
+						},
+						{
+							"name": "CheckForChanges"
+						},
+						{
+							"name": "SetValid0"
+						},
+						{
+							"name": "KeyAsInt"
+						},
+						{
+							"name": "NormNames"
+						},
+						{
+							"name": "NameNorm2"
+						},
+						{
+							"name": "SetInactiveFields"
+						},
+						{
+							"name": "AlterRow1"
+						},
+						{
+							"name": "SetValidTo"
+						},
+						{
+							"name": "UnionNewAndUpdated"
+						},
+						{
+							"name": "SurrogateKey1"
+						},
+						{
+							"name": "AddSKtoMaxVal"
+						},
+						{
+							"name": "AddMaxValForSK"
+						},
+						{
+							"name": "NullFilter"
+						},
+						{
+							"name": "DimCustomerValid"
+						},
+						{
+							"name": "DeriveColumns"
+						}
+					],
+					"script": "\n\nsource(output(\n\t\tSurrogateKey as integer,\n\t\tCustomerID as integer,\n\t\tFirstName as string,\n\t\tLastName as string,\n\t\tCompanyName as string,\n\t\tAddress as string,\n\t\tPostalCode as string,\n\t\tValidFrom as date,\n\t\tValidTo as date,\n\t\tValid as integer\n\t),\n\tallowSchemaDrift: true,\n\tvalidateSchema: false,\n\tisolationLevel: 'READ_UNCOMMITTED',\n\tformat: 'table') ~> DimCustomerSource\nsource(output(\n\t\tCustomerID as integer,\n\t\tFirstName as string,\n\t\tLastName as string,\n\t\tCompanyName as string,\n\t\tAddress as string,\n\t\tPostalCode as string\n\t),\n\tallowSchemaDrift: true,\n\tvalidateSchema: false,\n\tisolationLevel: 'READ_UNCOMMITTED',\n\tformat: 'table') ~> CustomerSource\nsource(output(\n\t\tmaxval as integer\n\t),\n\tallowSchemaDrift: true,\n\tvalidateSchema: false,\n\tisolationLevel: 'READ_UNCOMMITTED',\n\tquery: 'select MAX(SurrogateKey) as maxval from dbo.DimCustomer',\n\tformat: 'query') ~> GetMaxValSK\nNormNames split(isNull(Valid),\n\tdisjoint: false) ~> IdentifyNewCustomers@(NewCustomer, OldCustomer)\nKeyAsInt, DimCustomerValid lookup(KeyAsInt@CustomerID == DimCustomerSource@CustomerID,\n\tbroadcast: 'none')~> LookupID\nNameNorm2, DimCustomerValid exists((NameNorm2@CustomerID == DimCustomerSource@CustomerID) && (NameNorm2@Address != DimCustomerSource@Address || \r\nNameNorm2@PostalCode != DimCustomerSource@PostalCode || NameNorm2@CompanyName != DimCustomerSource@CompanyName),\n\tnegate:false,\n\tbroadcast: 'none')~> CheckForChanges\nCheckForChanges derive(Valid = 0) ~> SetValid0\nNullFilter derive(CustomerID = toInteger(CustomerID)) ~> KeyAsInt\nLookupID select(mapColumn(\n\t\tSurrogateKey,\n\t\tCustomerID = KeyAsInt@CustomerID,\n\t\tFirstName = CustomerSource@FirstName,\n\t\tLastName = CustomerSource@LastName,\n\t\tCompanyName = CustomerSource@CompanyName,\n\t\tAddress = CustomerSource@Address,\n\t\tPostalCode = CustomerSource@PostalCode,\n\t\tValidFrom,\n\t\tValidTo,\n\t\tValid\n\t)) ~> NormNames\nIdentifyNewCustomers@OldCustomer select(mapColumn(\n\t\tCustomerID,\n\t\tFirstName,\n\t\tLastName,\n\t\tCompanyName,\n\t\tAddress,\n\t\tPostalCode,\n\t\tValidFrom,\n\t\tValidTo,\n\t\tValid\n\t)) ~> NameNorm2\nSetValidTo select(mapColumn(\n\t\tCustomerID,\n\t\tValidTo,\n\t\tValid\n\t)) ~> SetInactiveFields\nSetInactiveFields alterRow(updateIf(true())) ~> AlterRow1\nSetValid0 derive(ValidTo = currentDate()) ~> SetValidTo\nIdentifyNewCustomers@NewCustomer, CheckForChanges union(byName: true)~> UnionNewAndUpdated\nAddMaxValForSK keyGenerate(output(SurrogateKey as long),\n\tstartAt: 1L) ~> SurrogateKey1\nSurrogateKey1 derive(SurrogateKey = toInteger(SurrogateKey) + case(isNull(maxval), 0, toInteger(maxval))) ~> AddSKtoMaxVal\nDeriveColumns, GetMaxValSK join(1 == 1,\n\tjoinType:'cross',\n\tbroadcast: 'none')~> AddMaxValForSK\nCustomerSource filter(not(isNull(CustomerID))) ~> NullFilter\nDimCustomerSource filter(Valid == 1) ~> DimCustomerValid\nUnionNewAndUpdated derive(Valid = 1,\n\t\tValidFrom = currentDate(),\n\t\tValidTo = toDate('2999-12-31')) ~> DeriveColumns\nAddSKtoMaxVal sink(input(\n\t\tSurrogateKey as integer,\n\t\tCustomerID as integer,\n\t\tFirstName as string,\n\t\tLastName as string,\n\t\tCompanyName as string,\n\t\tAddress as string,\n\t\tPostalCode as string,\n\t\tValidFrom as date,\n\t\tValidTo as date,\n\t\tValid as integer\n\t),\n\tallowSchemaDrift: true,\n\tvalidateSchema: false,\n\tformat: 'table',\n\tdeletable:false,\n\tinsertable:true,\n\tupdateable:false,\n\tupsertable:false) ~> sinkChanges\nAlterRow1 sink(input(\n\t\tSurrogateKey as integer,\n\t\tCustomerID as integer,\n\t\tFirstName as string,\n\t\tLastName as string,\n\t\tCompanyName as string,\n\t\tAddress as string,\n\t\tPostalCode as string,\n\t\tValidFrom as date,\n\t\tValidTo as date,\n\t\tValid as integer\n\t),\n\tallowSchemaDrift: true,\n\tvalidateSchema: false,\n\tformat: 'table',\n\tdeletable:false,\n\tinsertable:false,\n\tupdateable:true,\n\tupsertable:false,\n\tkeys:['CustomerID']) ~> sinkInactive"
+				}
+			},
+			"dependsOn": [
+				"[concat(variables('factoryId'), '/datasets/DimCustomer')]",
+				"[concat(variables('factoryId'), '/datasets/CustomerAndAddress')]"
+			]
+		},
+		{
+			"name": "[concat(parameters('factoryName'), '/Address')]",
+			"type": "Microsoft.DataFactory/factories/datasets",
+			"apiVersion": "2018-06-01",
+			"properties": {
+				"linkedServiceName": {
+					"referenceName": "[parameters('AzureSqlDatabase1')]",
+					"type": "LinkedServiceReference"
+				},
+				"annotations": [],
+				"type": "AzureSqlTable",
+				"schema": [
+					{
+						"name": "AddressID",
+						"type": "int",
+						"precision": 10
+					},
+					{
+						"name": "AddressLine1",
+						"type": "nvarchar"
+					},
+					{
+						"name": "AddressLine2",
+						"type": "nvarchar"
+					},
+					{
+						"name": "City",
+						"type": "nvarchar"
+					},
+					{
+						"name": "StateProvince",
+						"type": "nvarchar"
+					},
+					{
+						"name": "CountryRegion",
+						"type": "nvarchar"
+					},
+					{
+						"name": "PostalCode",
+						"type": "nvarchar"
+					},
+					{
+						"name": "rowguid",
+						"type": "uniqueidentifier"
+					},
+					{
+						"name": "ModifiedDate",
+						"type": "datetime",
+						"precision": 23,
+						"scale": 3
+					}
+				],
+				"typeProperties": {
+					"schema": "SalesLT",
+					"table": "Address"
+				}
+			},
+			"dependsOn": []
+		},
+		{
+			"name": "[concat(parameters('factoryName'), '/CustomerAndAddress')]",
+			"type": "Microsoft.DataFactory/factories/datasets",
+			"apiVersion": "2018-06-01",
+			"properties": {
+				"linkedServiceName": {
+					"referenceName": "[parameters('AzureSqlDatabase1')]",
+					"type": "LinkedServiceReference"
+				},
+				"annotations": [],
+				"type": "AzureSqlTable",
+				"schema": [
+					{
+						"name": "CustomerID",
+						"type": "int",
+						"precision": 10
+					},
+					{
+						"name": "FirstName",
+						"type": "nvarchar"
+					},
+					{
+						"name": "LastName",
+						"type": "nvarchar"
+					},
+					{
+						"name": "CompanyName",
+						"type": "nvarchar"
+					},
+					{
+						"name": "Address",
+						"type": "nvarchar"
+					},
+					{
+						"name": "PostalCode",
+						"type": "nvarchar"
+					}
+				],
+				"typeProperties": {
+					"schema": "dbo",
+					"table": "CustomerAndAddress"
+				}
+			},
+			"dependsOn": []
+		},
+		{
+			"name": "[concat(parameters('factoryName'), '/DimCustomer')]",
+			"type": "Microsoft.DataFactory/factories/datasets",
+			"apiVersion": "2018-06-01",
+			"properties": {
+				"linkedServiceName": {
+					"referenceName": "[parameters('AzureSqlDatabase1')]",
+					"type": "LinkedServiceReference"
+				},
+				"annotations": [],
+				"type": "AzureSqlTable",
+				"schema": [
+					{
+						"name": "SurrogateKey",
+						"type": "int",
+						"precision": 10
+					},
+					{
+						"name": "CustomerID",
+						"type": "int",
+						"precision": 10
+					},
+					{
+						"name": "FirstName",
+						"type": "nvarchar"
+					},
+					{
+						"name": "LastName",
+						"type": "nvarchar"
+					},
+					{
+						"name": "CompanyName",
+						"type": "nvarchar"
+					},
+					{
+						"name": "Address",
+						"type": "nvarchar"
+					},
+					{
+						"name": "PostalCode",
+						"type": "nvarchar"
+					},
+					{
+						"name": "ValidFrom",
+						"type": "date"
+					},
+					{
+						"name": "ValidTo",
+						"type": "date"
+					},
+					{
+						"name": "Valid",
+						"type": "int",
+						"precision": 10
+					}
+				],
+				"typeProperties": {
+					"tableName": "dbo.DimCustomer"
+				}
+			},
+			"dependsOn": []
+		}
+	]
+}
