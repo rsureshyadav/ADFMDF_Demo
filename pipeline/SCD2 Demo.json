@@ -1,5 +1,5 @@
 {
-	"name": "SCD2 Pipeline",
+	"name": "SCD2 Demo",
 	"properties": {
 		"activities": [
 			{
@@ -25,6 +25,10 @@
 					"dataflow": {
 						"referenceName": "SCD2 data flow v3",
 						"type": "DataFlowReference"
+					},
+					"compute": {
+						"coreCount": 8,
+						"computeType": "General"
 					}
 				}
 			},
@@ -57,6 +61,10 @@
 					"dataflow": {
 						"referenceName": "AddAddress",
 						"type": "DataFlowReference"
+					},
+					"compute": {
+						"coreCount": 8,
+						"computeType": "General"
 					}
 				}
 			},
@@ -286,6 +294,9 @@
 				]
 			}
 		],
+		"folder": {
+			"name": "Demos"
+		},
 		"annotations": []
 	},
 	"type": "Microsoft.DataFactory/factories/pipelines"
