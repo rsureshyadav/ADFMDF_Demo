@@ -1,0 +1,9 @@
+{
+	"name": "adfkpacc",
+	"location": "eastus",
+	"identity": {
+		"type": "SystemAssigned",
+		"principalId": "87915af7-94eb-4ee7-9bc6-d01aec61ad29",
+		"tenantId": "e0793d39-0939-496d-b129-198edd916feb"
+	}
+}
